@@ -1,14 +1,15 @@
 //
-//  ViewController.swift
+//  PrintViewController.swift
 //  PrintStoreClient
 //
-//  Created by May on 28.01.25.
+//  Created by May on 29.01.25.
 //
 
 import UIKit
 import SceneKit
+import Combine
 
-class ViewController: UIViewController {
+class PrintViewController: UIViewController {
     
     // Text field to allow user to enter server address
     private let serverAddressTextField: UITextField = {
@@ -54,8 +55,6 @@ class ViewController: UIViewController {
         return label
     }()
     
-    private var selectedFileURL: URL?
-    
     private let previewContainer: UIView = {
         let view = UIView()
         view.backgroundColor = .systemGray
@@ -72,16 +71,54 @@ class ViewController: UIViewController {
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
     }()
-
+    
+    private var selectedFileURL: URL?
+    private var viewModel = PrintViewModel()
+    private var cancellables = Set<AnyCancellable>()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         setupActions()
         setupScene()
+        bindViewModel()
+    }
+    
+    // ViewModel -> View
+    private func bindViewModel() {
+        viewModel.$materialUsedText
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.text, on: printCostLabel)
+            .store(in: &cancellables)
+        
+        viewModel.$printCostText
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.text, on: printCostLabel)
+            .store(in: &cancellables)
+        
+        viewModel.$showAlert
+            .filter { $0.isShown }
+            .sink { [weak self] alert in
+                self?.showAlert(message: alert.message)
+                self?.viewModel.showAlert = (message: "", isShown: false)
+            }
+            .store(in: &cancellables)
+    }
+    
+    @objc private func selectFile() {
+        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.item])
+        documentPicker.delegate = self
+        // temporary false
+        documentPicker.allowsMultipleSelection = false
+        present(documentPicker, animated: true)
+    }
+    
+    @objc private func uploadFile() {
+        viewModel.uploadFile(serverAddress: serverAddressTextField.text,
+                             fileURL: selectedFileURL)
     }
     
     private func setupUI() {
-        
         view.backgroundColor = .white
         
         view.addSubview(serverAddressTextField)
@@ -134,95 +171,10 @@ class ViewController: UIViewController {
             sceneView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor)
         ])
     }
-
+    
     private func setupActions() {
         selectFileButton.addTarget(self, action: #selector(selectFile), for: .touchUpInside)
         uploadButton.addTarget(self, action: #selector(uploadFile), for: .touchUpInside)
-    }
-    
-    @objc private func selectFile() {
-        let documentPicker = UIDocumentPickerViewController(documentTypes: ["public.item"], in: .import)
-        documentPicker.delegate = self
-        // temporary false
-        documentPicker.allowsMultipleSelection = false
-        present(documentPicker, animated: true)
-    }
-    
-    private let materialDensity = 0.00121
-    private let moneyPerGram = 0.3
-    
-    @objc private func uploadFile() {
-        guard let serverURLString = serverAddressTextField.text,
-              let serverURL = URL(string: serverURLString),
-              let fileURL = selectedFileURL else {
-            showAlert(message: "Check server address and try again")
-            return
-        }
-        
-        var request = URLRequest(url: serverURL)
-        request.httpMethod = "POST"
-        
-        // multipart/form-data
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
-        
-        var body = Data()
-        
-        // add file to request body
-        do {
-            let fileData = try Data(contentsOf: fileURL)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"uploaded_file\"; filename=\"\(fileURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
-            body.append(fileData)
-            body.append("\r\n".data(using: .utf8)!)
-        } catch {
-            showAlert(message: "Ошибка чтения файла: \(error.localizedDescription)")
-            return
-        }
-        
-        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-        request.httpBody = body
-        
-        // send request
-        let task = URLSession.shared.dataTask(with: request) { [weak self] data, response, error in
-            if let error = error {
-                self?.showAlert(message: "Network error: \(error.localizedDescription)")
-                return
-            }
-            
-            guard let data = data else {
-                self?.showAlert(message: "Response contains no data")
-                return
-            }
-            
-            // parse JSON
-            do {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let materialUsed = json["materialUsed"] as? String,
-                   let materialUsed_Double = Double(materialUsed) {
-                    DispatchQueue.main.async {
-                        self?.resultLabel.text = "Material used: \(materialUsed) mm³"
-                        self?.printCostLabel.text = "Print cost: \((materialUsed_Double * self!.materialDensity * self!.moneyPerGram * 100).rounded() / 100) BYN"
-                    }
-                } else {
-                    self?.showAlert(message: "Invalid JSON format")
-                }
-            } catch {
-                self?.showAlert(message: "Error parsing JSON: \(error.localizedDescription)")
-            }
-            
-        }
-        task.resume()
-    }
-    
-    // alerts method
-    private func showAlert(message: String) {
-        DispatchQueue.main.async {
-            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
-            alert.addAction((UIAlertAction(title: "OK", style: .default)))
-            self.present(alert, animated: true)
-        }
     }
     
     private func setupScene() {
@@ -234,10 +186,19 @@ class ViewController: UIViewController {
         cameraNode.position = SCNVector3(0, 0, 15)
         scene.rootNode.addChildNode(cameraNode)
     }
-
+    
+    // alerts method
+    private func showAlert(message: String) {
+        DispatchQueue.main.async {
+            let alert = UIAlertController(title: "Error", message: message, preferredStyle: .alert)
+            alert.addAction((UIAlertAction(title: "OK", style: .default)))
+            self.present(alert, animated: true)
+        }
+    }
+    
 }
 
-extension ViewController: UIDocumentPickerDelegate {
+extension PrintViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let fileURL = urls.first else { return }
         selectedFileURL = fileURL
@@ -286,4 +247,3 @@ extension ViewController: UIDocumentPickerDelegate {
     }
      */
 }
-
