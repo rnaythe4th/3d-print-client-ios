@@ -25,6 +25,25 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         let button = UIButton()
         button.setTitle("Select file", for: .normal)
         button.setTitleColor(.systemBlue, for: .normal)
+        
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.filled()
+            
+            config.baseBackgroundColor = .clear
+            config.baseForegroundColor = .systemBlue
+            config.background.strokeColor = .systemBlue
+            config.background.strokeWidth = 1
+            config.background.cornerRadius = 8
+            config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+            
+            button.configuration = config
+        } else {
+            button.layer.borderWidth = 1
+            button.layer.borderColor = UIColor.systemBlue.cgColor
+            button.layer.cornerRadius = 8
+            button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        }
+        
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
@@ -156,8 +175,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             
             // "Select File" button
             selectFileButton.topAnchor.constraint(equalTo: serverAddressTextField.bottomAnchor, constant: 20),
-            selectFileButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            selectFileButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            selectFileButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             // "Upload to server" button
             uploadButton.topAnchor.constraint(equalTo: selectFileButton.bottomAnchor, constant: 20),
