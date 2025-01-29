@@ -7,6 +7,6 @@
 
 import Foundation
 
-struct PrintResponse {
+struct PrintResponse: Codable {
     let materialUsed: Double
 }

@@ -14,7 +14,7 @@ protocol NetworkServiceProtocol {
 }
 
 final class NetworkService: NetworkServiceProtocol {
-    func uploadFile(to serverURL: URL, fileURL: URL, completion: @escaping (Result<PrintResponse, any Error>) -> Void) {
+    func uploadFile(to serverURL: URL, fileURL: URL, completion: @escaping (Result<PrintResponse, Error>) -> Void) {
         
         var request = URLRequest(url: serverURL)
         request.httpMethod = "POST"
@@ -47,6 +47,9 @@ final class NetworkService: NetworkServiceProtocol {
                 }
                 // parse JSON
                 do {
+                    // let json = try JSONDecoder().decode(PrintResponse.self, from: data)
+                    // or
+                    // let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
                     if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                        let materialUsedString = json["materialUsed"] as? String,
                        let materialUsed = Double(materialUsedString) {

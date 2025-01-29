@@ -88,7 +88,7 @@ class PrintViewController: UIViewController {
     private func bindViewModel() {
         viewModel.$materialUsedText
             .receive(on: DispatchQueue.main)
-            .assign(to: \.text, on: printCostLabel)
+            .assign(to: \.text, on: resultLabel)
             .store(in: &cancellables)
         
         viewModel.$printCostText
@@ -114,8 +114,19 @@ class PrintViewController: UIViewController {
     }
     
     @objc private func uploadFile() {
-        viewModel.uploadFile(serverAddress: serverAddressTextField.text,
-                             fileURL: selectedFileURL)
+        guard let fileURL = selectedFileURL else {
+            showAlert(message: "File not selected")
+            return
+        }
+        
+        if fileURL.startAccessingSecurityScopedResource() {
+            defer { fileURL.stopAccessingSecurityScopedResource() }
+            viewModel.uploadFile(serverAddress: serverAddressTextField.text,
+                                 fileURL: fileURL)
+        } else {
+            showAlert(message: "Error accessing file")
+        }
+        
     }
     
     private func setupUI() {
@@ -201,11 +212,18 @@ class PrintViewController: UIViewController {
 extension PrintViewController: UIDocumentPickerDelegate {
     func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
         guard let fileURL = urls.first else { return }
+        print("Selected file: \(fileURL)")
         selectedFileURL = fileURL
         
         // close documentPicker automatically after selection is done
         dismiss(animated: true) { [weak self] in
-            self?.loadModel(from: fileURL)
+            // avoid access issues
+            if fileURL.startAccessingSecurityScopedResource() {
+                self?.loadModel(from: fileURL)
+                fileURL.stopAccessingSecurityScopedResource()
+            } else {
+                self?.showAlert(message: "Error accessing the file")
+            }
         }
     }
     
@@ -215,7 +233,9 @@ extension PrintViewController: UIDocumentPickerDelegate {
             sceneView.scene?.rootNode.childNodes.forEach { $0.removeFromParentNode() }
             
             // Load new model
+            print("Attempt to load model: \(url.path)")
             let scene = try SCNScene(url: url, options: nil)
+            print("Model successfully loaded")
             for node in scene.rootNode.childNodes {
                 sceneView.scene?.rootNode.addChildNode(node)
             }
@@ -232,6 +252,7 @@ extension PrintViewController: UIDocumentPickerDelegate {
             }
             
         } catch {
+            print("Error loading model: \(error.localizedDescription)")
             showAlert(message: "Error loading model: \(error.localizedDescription)")
         }
     }
