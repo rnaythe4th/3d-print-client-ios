@@ -9,7 +9,7 @@ import UIKit
 import SceneKit
 import Combine
 
-class PrintViewController: UIViewController {
+class PrintViewController: UIViewController, UITextFieldDelegate {
     
     // Text field to allow user to enter server address
     private let serverAddressTextField: UITextField = {
@@ -82,6 +82,13 @@ class PrintViewController: UIViewController {
         setupActions()
         setupScene()
         bindViewModel()
+        serverAddressTextField.delegate = self
+        let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    @objc private func dismissKeyboard() {
+        view.endEditing(true)
     }
     
     // ViewModel -> View
@@ -207,6 +214,11 @@ class PrintViewController: UIViewController {
         }
     }
     
+    func textFieldShouldReturn(_ textField: UITextField) -> Bool {
+        textField.resignFirstResponder() // Закрыть клавиатуру
+        return true
+    }
+    
 }
 
 extension PrintViewController: UIDocumentPickerDelegate {
@@ -237,6 +249,7 @@ extension PrintViewController: UIDocumentPickerDelegate {
             let scene = try SCNScene(url: url, options: nil)
             print("Model successfully loaded")
             for node in scene.rootNode.childNodes {
+                applyMaterialColor(UIColor.green, to: node)
                 sceneView.scene?.rootNode.addChildNode(node)
             }
             
@@ -256,6 +269,18 @@ extension PrintViewController: UIDocumentPickerDelegate {
             showAlert(message: "Error loading model: \(error.localizedDescription)")
         }
     }
+    
+    private func applyMaterialColor(_ color: UIColor, to node: SCNNode) {
+        let coloredMaterial = SCNMaterial()
+        coloredMaterial.diffuse.contents = color
+        
+        node.geometry?.materials = [coloredMaterial]
+        
+        for child in node.childNodes {
+            applyMaterialColor(color, to: child)
+        }
+    }
+    
     /*
     private var rotationAngle: Float = { return 0 }
     
