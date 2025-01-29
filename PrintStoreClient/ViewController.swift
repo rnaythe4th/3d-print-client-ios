@@ -41,7 +41,14 @@ class ViewController: UIViewController {
     // result from server Label
     private let resultLabel: UILabel = {
         let label = UILabel()
-        label.text = "Print cost: "
+        label.text = "Print cost: *upload file first*"
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
+    private let printCostLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Print cost: *upload file first*"
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -62,6 +69,7 @@ class ViewController: UIViewController {
         view.addSubview(selectFileButton)
         view.addSubview(uploadButton)
         view.addSubview(resultLabel)
+        view.addSubview(printCostLabel)
         
         NSLayoutConstraint.activate([
             serverAddressTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -79,7 +87,11 @@ class ViewController: UIViewController {
             
             resultLabel.topAnchor.constraint(equalTo: uploadButton.bottomAnchor, constant: 20),
             resultLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            resultLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            resultLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            printCostLabel.topAnchor.constraint(equalTo: resultLabel.bottomAnchor, constant: 10),
+            printCostLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            printCostLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: 20)
         ])
     }
 
@@ -95,6 +107,9 @@ class ViewController: UIViewController {
         documentPicker.allowsMultipleSelection = false
         present(documentPicker, animated: true)
     }
+    
+    private let materialDensity = 0.00121
+    private let moneyPerGram = 0.3
     
     @objc private func uploadFile() {
         guard let serverURLString = serverAddressTextField.text,
@@ -144,9 +159,11 @@ class ViewController: UIViewController {
             // parse JSON
             do {
                 if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let materialUsed = json["materialUsed"] as? String {
+                   let materialUsed = json["materialUsed"] as? String,
+                   let materialUsed_Double = Double(materialUsed) {
                     DispatchQueue.main.async {
-                        self?.resultLabel.text = "Material used: \(materialUsed)"
+                        self?.resultLabel.text = "Material used: \(materialUsed) mm³"
+                        self?.printCostLabel.text = "Print cost: \((materialUsed_Double * self!.materialDensity * self!.moneyPerGram * 100).rounded() / 100) BYN"
                     }
                 } else {
                     self?.showAlert(message: "Invalid JSON format")
