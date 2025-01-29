@@ -62,14 +62,14 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     // result from server Label
     private let resultLabel: UILabel = {
         let label = UILabel()
-        label.text = "Print cost: *upload file first*"
+        label.text = "Print cost: "
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
     
     private let printCostLabel: UILabel = {
         let label = UILabel()
-        label.text = "Print cost: *upload file first*"
+        label.text = "Print cost: "
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -89,6 +89,20 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         view.allowsCameraControl = true
         view.translatesAutoresizingMaskIntoConstraints = false
         return view
+    }()
+    
+    private let resultActivityIndicator: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.hidesWhenStopped = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        return spinner
+    }()
+    
+    private let costActivityIndicator: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.hidesWhenStopped = true
+        spinner.translatesAutoresizingMaskIntoConstraints = false
+        return spinner
     }()
     
     private var selectedFileURL: URL?
@@ -129,6 +143,21 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                 self?.viewModel.showAlert = (message: "", isShown: false)
             }
             .store(in: &cancellables)
+        
+        // stop loading animation
+        viewModel.$printCostText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.costActivityIndicator.stopAnimating()
+            }
+            .store(in: &cancellables)
+        // stop loading animation
+        viewModel.$materialUsedText
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] _ in
+                self?.resultActivityIndicator.stopAnimating()
+            }
+            .store(in: &cancellables)
     }
     
     @objc private func selectFile() {
@@ -140,6 +169,9 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc private func uploadFile() {
+        resultActivityIndicator.startAnimating()
+        costActivityIndicator.startAnimating()
+        
         guard let fileURL = selectedFileURL else {
             showAlert(message: "File not selected")
             return
@@ -165,6 +197,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(printCostLabel)
         view.addSubview(previewContainer)
         previewContainer.addSubview(sceneView)
+        view.addSubview(resultActivityIndicator)
+        view.addSubview(costActivityIndicator)
         
         NSLayoutConstraint.activate([
             
@@ -186,12 +220,12 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             // "Filament used" label
             resultLabel.topAnchor.constraint(equalTo: uploadButton.bottomAnchor, constant: 20),
             resultLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            resultLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            //resultLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
             // "Print cost" label
             printCostLabel.topAnchor.constraint(equalTo: resultLabel.bottomAnchor, constant: 10),
             printCostLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            printCostLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            //printCostLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
             
             // 3D-Model preview container
             previewContainer.topAnchor.constraint(equalTo: printCostLabel.bottomAnchor, constant: 20),
@@ -204,13 +238,22 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             sceneView.topAnchor.constraint(equalTo: previewContainer.topAnchor),
             sceneView.leadingAnchor.constraint(equalTo: previewContainer.leadingAnchor),
             sceneView.trailingAnchor.constraint(equalTo: previewContainer.trailingAnchor),
-            sceneView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor)
+            sceneView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
+            
+            // loading animation for Filament used
+            resultActivityIndicator.centerYAnchor.constraint(equalTo: resultLabel.centerYAnchor),
+            resultActivityIndicator.leadingAnchor.constraint(equalTo: resultLabel.trailingAnchor, constant: 8),
+            // loading animation for Print cost
+            costActivityIndicator.centerYAnchor.constraint(equalTo: printCostLabel.centerYAnchor),
+            costActivityIndicator.leadingAnchor.constraint(equalTo: printCostLabel.trailingAnchor, constant: 8)
         ])
     }
     
     private func setupActions() {
         selectFileButton.addTarget(self, action: #selector(selectFile), for: .touchUpInside)
         uploadButton.addTarget(self, action: #selector(uploadFile), for: .touchUpInside)
+        uploadButton.addTarget(self, action: #selector(animateButtonPress(_:)), for: .touchDown)
+        uploadButton.addTarget(self, action: #selector(animateButtonRelease(_:)), for: [.touchUpInside, .touchCancel, .touchDragExit])
     }
     
     private func setupScene() {
@@ -236,6 +279,25 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         textField.resignFirstResponder() // Закрыть клавиатуру
         return true
     }
+    
+    @objc private func animateButtonPress(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.2, animations: {
+            sender.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+        })
+    }
+    
+    @objc private func animateButtonRelease(_ sender: UIButton) {
+        UIView.animate(withDuration: 0.2, animations: {
+            sender.transform = .identity
+        })
+    }
+    
+    private func startLoading() {
+        resultActivityIndicator.startAnimating()
+        costActivityIndicator.startAnimating()
+    }
+
+    
     
 }
 
@@ -300,14 +362,14 @@ extension PrintViewController: UIDocumentPickerDelegate {
     }
     
     /*
-    private var rotationAngle: Float = { return 0 }
-    
-    private func startRotation() {
-        sceneView.scene?.rootNode.childNodes.forEach { node in
-            let rotation = SCNAction.rotateBy(x: -, y: 2, z: -, duration: 10)
-            let repeatRotation = SCNAction.repeatForever(rotation)
-            node.runAction(repeatRotation)
-        }
-    }
+     private var rotationAngle: Float = { return 0 }
+     
+     private func startRotation() {
+     sceneView.scene?.rootNode.childNodes.forEach { node in
+     let rotation = SCNAction.rotateBy(x: -, y: 2, z: -, duration: 10)
+     let repeatRotation = SCNAction.repeatForever(rotation)
+     node.runAction(repeatRotation)
+     }
+     }
      */
 }

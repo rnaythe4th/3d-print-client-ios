@@ -10,8 +10,8 @@ import Combine
 
 final class PrintViewModel {
     
-    @Published var materialUsedText: String? = "Material used: *upload file first*"
-    @Published var printCostText: String? = "Print cost: *upload file first*"
+    @Published var materialUsedText: String? = "Material used: "
+    @Published var printCostText: String? = "Print cost: "
     @Published var showAlert: (message: String, isShown: Bool) = ("", false)
     
     private let networkService: NetworkServiceProtocol
