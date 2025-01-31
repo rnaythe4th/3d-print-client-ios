@@ -1,13 +1,13 @@
 ## 3D Print Client (iOS)
-Пет-проект, ios-клиент.
+Часть пет-проекта, ios-клиент.
 
 Основной стек: Swift, UIKit, SceneKit.
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-  <img src="Screenshots/Screenshot_3.PNG" height="200">
-  <img src="Screenshots/Screenshot_4.PNG" height="200">
-  <img src="Screenshots/Screenshot_2.PNG" height="200">
-  <img src="Screenshots/Screenshot_1.PNG" height="200">
+  <img src="Screenshots/Screenshot_3.PNG" height="300">
+  <img src="Screenshots/Screenshot_4.PNG" height="300">
+  <img src="Screenshots/Screenshot_2.PNG" height="300">
+  <img src="Screenshots/Screenshot_1.PNG" height="300">
 </div>
 
 <br>
@@ -28,10 +28,11 @@
     - Отображается новая загруженная модель
     
 <br>
-<br>
 • • • • • • • • • • • • • •
 
 • • • • • • • • • • • • • •
+
+<br>
 
 ### Описание решаемой проблемы:
 Быстро узнать цену 3D-печати нужной модели на заказ практически невозможно. В поисковой выдаче по запросу "3D-печать на заказ <город>" большинство сайтов либо позволяют только оформить заявку с последующим рассмотрением менеджерами, либо указывают лишь цену печати за 1 грамм материала без учета особенностей модели.
@@ -52,10 +53,10 @@ Part of a pet project. iOS Client for 3D Printing Services.
 **Tech Stack**: Swift, UIKit, SceneKit.
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-  <img src="Screenshots/Screenshot_3.PNG" height="200">
-  <img src="Screenshots/Screenshot_4.PNG" height="200">
-  <img src="Screenshots/Screenshot_2.PNG" height="200">
-  <img src="Screenshots/Screenshot_1.PNG" height="200">
+  <img src="Screenshots/Screenshot_3.PNG" height="300">
+  <img src="Screenshots/Screenshot_4.PNG" height="300">
+  <img src="Screenshots/Screenshot_2.PNG" height="300">
+  <img src="Screenshots/Screenshot_1.PNG" height="300">
 </div>
 
 <br>
@@ -79,6 +80,8 @@ Features:<br>
 • • • • • • • • • • • • • •
 
 • • • • • • • • • • • • • •
+
+<br>
 
 #### Problem Statement  
 It’s nearly impossible to quickly estimate the cost of custom 3D printing for a specific model. Search results for "custom 3D printing in <city>" typically show websites that either:  
