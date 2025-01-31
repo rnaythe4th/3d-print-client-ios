@@ -3,16 +3,19 @@
 
 Основной стек: Swift, UIKit, SceneKit.
 
-<img src="Screenshots/Screenshot_3.PNG" height="200">
-<img src="Screenshots/Screenshot_4.PNG" height="200">
-<img src="Screenshots/Screenshot_2.PNG" height="200">
-<img src="Screenshots/Screenshot_1.PNG" height="200">
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="Screenshots/Screenshot_3.PNG" height="200">
+  <img src="Screenshots/Screenshot_4.PNG" height="200">
+  <img src="Screenshots/Screenshot_2.PNG" height="200">
+  <img src="Screenshots/Screenshot_1.PNG" height="200">
+</div>
 
 <br>
 Приложение позволяет пользователю загрузить свою 3д-модель и узнать итоговую цену 3D-печати с высокой точностью без необходимости взаимодействовать с персоналом сервиса.
 <br>
 <br>
 Функционал:<br>
+
 - Выбор 3D-модели из файла
 - Просмотр выбранной модели:
     - Масштабирование
@@ -25,15 +28,14 @@
     - Отображается новая загруженная модель
     
 <br>
+<br>
 • • • • • • • • • • • • • •
 
 • • • • • • • • • • • • • •
 
-
-
-#### Описание решаемой проблемы:
+### Описание решаемой проблемы:
 Быстро узнать цену 3D-печати нужной модели на заказ практически невозможно. В поисковой выдаче по запросу "3D-печать на заказ <город>" большинство сайтов либо позволяют только оформить заявку с последующим рассмотрением менеджерами, либо указывают лишь цену печати за 1 грамм материала без учета особенностей модели.
-#### Решение проблемы:
+### Решение проблемы:
 Создание системы со следующим принципом работы:<br>
 1. Клиент (web, mobile) позволяет пользователю загрузить имеющуюся 3D-модель из файла.
 2. Затем клиент отправляет модель на сервер.
@@ -49,10 +51,12 @@ Part of a pet project. iOS Client for 3D Printing Services.
 
 **Tech Stack**: Swift, UIKit, SceneKit.
 
-<img src="Screenshots/Screenshot_3.PNG" height="200">
-<img src="Screenshots/Screenshot_4.PNG" height="200">
-<img src="Screenshots/Screenshot_2.PNG" height="200">
-<img src="Screenshots/Screenshot_1.PNG" height="200">
+<div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="Screenshots/Screenshot_3.PNG" height="200">
+  <img src="Screenshots/Screenshot_4.PNG" height="200">
+  <img src="Screenshots/Screenshot_2.PNG" height="200">
+  <img src="Screenshots/Screenshot_1.PNG" height="200">
+</div>
 
 <br>
 The app allows users to upload a 3D model and instantly calculate the exact price of 3D printing without needing to contact service staff.
@@ -84,7 +88,7 @@ It’s nearly impossible to quickly estimate the cost of custom 3D printing for 
 #### Solution  
 
 A system with the following workflow: 
- 
+
 1. **Client** (web/mobile): Lets users upload a 3D model from a file.  
 2. The client sends the model to the **server**.  
 3. **Server**: Slices the model (similar to slicer software used in 3D printing preparation) and calculates the material volume in mm³.  
