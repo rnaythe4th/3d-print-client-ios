@@ -6,8 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		6CEDA82A2D4D7298007978ED /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 6CEDA8292D4D7293007978ED /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		6CDF36332D4958E800F14ACC /* PrintStoreClient.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PrintStoreClient.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6CEDA8292D4D7293007978ED /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -29,6 +34,11 @@
 			path = PrintStoreClient;
 			sourceTree = "<group>";
 		};
+		6CEDA82B2D4D7C49007978ED /* Screenshots */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Screenshots;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -45,6 +55,8 @@
 		6CDF362A2D4958E800F14ACC = {
 			isa = PBXGroup;
 			children = (
+				6CEDA82B2D4D7C49007978ED /* Screenshots */,
+				6CEDA8292D4D7293007978ED /* README.md */,
 				6CDF36352D4958E800F14ACC /* PrintStoreClient */,
 				6CDF36342D4958E800F14ACC /* Products */,
 			);
@@ -75,6 +87,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				6CDF36352D4958E800F14ACC /* PrintStoreClient */,
+				6CEDA82B2D4D7C49007978ED /* Screenshots */,
 			);
 			name = PrintStoreClient;
 			packageProductDependencies = (
@@ -122,6 +135,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				6CEDA82A2D4D7298007978ED /* README.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
