@@ -1,6 +1,11 @@
 ## 3D Print Client (iOS)
 Часть пет-проекта, ios-клиент.
 
+Веб-клиент и сервер:
+
+[![GitHub](https://img.shields.io/badge/GitHub-3d_print_site_React-blue?logo=github)](https://github.com/rnaythe4th/3d-print-site-react)
+[![GitHub](https://img.shields.io/badge/GitHub-CuraEngine_Docker-blue?logo=github)](https://github.com/rnaythe4th/CuraEngine_docker)
+
 Основной стек: Swift, UIKit, SceneKit.
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -49,6 +54,11 @@
 
 ## 3D Print Client (iOS) 
 Part of a pet project. iOS Client for 3D Printing Services.
+
+Web-client and server:
+
+[![GitHub](https://img.shields.io/badge/GitHub-3d_print_site_React-blue?logo=github)](https://github.com/rnaythe4th/3d-print-site-react)
+[![GitHub](https://img.shields.io/badge/GitHub-CuraEngine_Docker-blue?logo=github)](https://github.com/rnaythe4th/CuraEngine_docker)
 
 **Tech Stack**: Swift, UIKit, SceneKit.
 
