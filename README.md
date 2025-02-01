@@ -37,7 +37,7 @@
 
 • • • • • • • • • • • • • •
 
-<br>
+
 
 ### Описание решаемой проблемы:
 Быстро узнать цену 3D-печати нужной модели на заказ практически невозможно. В поисковой выдаче по запросу "3D-печать на заказ <город>" большинство сайтов либо позволяют только оформить заявку с последующим рассмотрением менеджерами, либо указывают лишь цену печати за 1 грамм материала без учета особенностей модели.
@@ -91,7 +91,6 @@ Features:<br>
 
 • • • • • • • • • • • • • •
 
-<br>
 
 #### Problem Statement  
 It’s nearly impossible to quickly estimate the cost of custom 3D printing for a specific model. Search results for "custom 3D printing in <city>" typically show websites that either:  
