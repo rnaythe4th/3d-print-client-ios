@@ -1,4 +1,4 @@
-## 3D Print Client (iOS)
+## 3D Print iOS Client (прототип)
 Часть пет-проекта, ios-клиент.
 
 Веб-клиент и сервер:
@@ -52,7 +52,7 @@
 ---
 
 
-## 3D Print Client (iOS) 
+## 3D Print iOS Client (Experimental Stage) 
 Part of a pet project. iOS Client for 3D Printing Services.
 
 Web-client and server:
