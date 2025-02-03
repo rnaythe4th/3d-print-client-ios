@@ -135,7 +135,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                 case .idle:
                     self.resultLabel.text = "Material used: "
                     self.printCostLabel.text = "Print cost: "
-                    self.resultActivityIndicator.startAnimating()
+                    self.resultActivityIndicator.stopAnimating()
                     self.costActivityIndicator.stopAnimating()
                 case .loading:
                     self.resultActivityIndicator.startAnimating()
@@ -199,7 +199,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     private func setupUI() {
-        view.backgroundColor = .white
+        view.backgroundColor = .systemBackground
         
         view.addSubview(serverAddressTextField)
         view.addSubview(selectFileButton)
