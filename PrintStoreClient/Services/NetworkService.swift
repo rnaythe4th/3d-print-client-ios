@@ -22,7 +22,7 @@ final class NetworkService: NetworkServiceProtocol {
     // my first time trying DI
     // Constructor injection, to be precise
     init(
-        multipartBuilder: MultipartRequestBuilderProtocol = MultipartRequestBilder(),
+        multipartBuilder: MultipartRequestBuilderProtocol = MultipartRequestBuilder(),
         responseParser: ResponseParserProtocol = ResponseParser()
     ) {
         self.multipartBuilder = multipartBuilder

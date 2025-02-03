@@ -18,7 +18,7 @@ protocol MultipartRequestBuilderProtocol {
     ) throws -> URLRequest
 }
 
-final class MultipartRequestBilder: MultipartRequestBuilderProtocol {
+final class MultipartRequestBuilder: MultipartRequestBuilderProtocol {
     func buildRequest(
         serverURL: URL,
         fileURL: URL

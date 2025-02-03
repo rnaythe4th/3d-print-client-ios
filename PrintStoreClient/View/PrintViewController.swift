@@ -118,6 +118,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         serverAddressTextField.delegate = self
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGesture)
+        viewModel.state = .idle
     }
     
     @objc private func dismissKeyboard() {
@@ -176,8 +177,12 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         
         Task {
             do {
-                try fileURL.startAccessingSecurityScopedResource()
-                defer { fileURL.stopAccessingSecurityScopedResource() }
+                let didStartAccessing = fileURL.startAccessingSecurityScopedResource()
+                defer {
+                    if didStartAccessing {
+                        fileURL.stopAccessingSecurityScopedResource()
+                    }
+                }
                 try await viewModel.uploadFile(
                     serverAddress: serverAddressTextField.text,
                     fileURL: fileURL
