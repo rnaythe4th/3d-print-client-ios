@@ -170,12 +170,25 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
-        if fileURL.startAccessingSecurityScopedResource() {
-            defer { fileURL.stopAccessingSecurityScopedResource() }
-            viewModel.uploadFile(serverAddress: serverAddressTextField.text,
-                                 fileURL: fileURL)
-        } else {
-            showAlert(message: "Error accessing file")
+        //        if fileURL.startAccessingSecurityScopedResource() {
+        //            defer { fileURL.stopAccessingSecurityScopedResource() }
+        
+        
+        Task {
+            do {
+                try fileURL.startAccessingSecurityScopedResource()
+                defer { fileURL.stopAccessingSecurityScopedResource() }
+                try await viewModel.uploadFile(
+                    serverAddress: serverAddressTextField.text,
+                    fileURL: fileURL
+                )
+            } catch {
+                await MainActor.run {
+                    showAlert(message: error.localizedDescription)
+                    resultActivityIndicator.stopAnimating()
+                    costActivityIndicator.stopAnimating()
+                }
+            }
         }
         
     }
@@ -289,7 +302,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         resultActivityIndicator.startAnimating()
         costActivityIndicator.startAnimating()
     }
-
+    
     
     
 }

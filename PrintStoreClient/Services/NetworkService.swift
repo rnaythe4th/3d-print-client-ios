@@ -8,63 +8,39 @@
 import Foundation
 
 protocol NetworkServiceProtocol {
-    func uploadFile(to serverURL: URL,
-                    fileURL: URL,
-                    completion: @escaping (Result<PrintResponse, Error>) -> Void)
+    func uploadFile(
+        to serverURL: URL,
+        fileURL: URL
+    ) async throws -> PrintResponse
 }
 
 final class NetworkService: NetworkServiceProtocol {
-    func uploadFile(to serverURL: URL, fileURL: URL, completion: @escaping (Result<PrintResponse, Error>) -> Void) {
+    private let multipartBuilder: MultipartRequestBuilderProtocol
+    private let responseParser: ResponseParserProtocol
+    private var currentTask: URLSessionTask?
+    
+    // my first time trying DI
+    // Constructor injection, to be precise
+    init(
+        multipartBuilder: MultipartRequestBuilderProtocol = MultipartRequestBilder(),
+        responseParser: ResponseParserProtocol = ResponseParser()
+    ) {
+        self.multipartBuilder = multipartBuilder
+        self.responseParser = responseParser
+    }
+    
+    func uploadFile(to serverURL: URL, fileURL: URL) async throws -> PrintResponse {
+        let request = try multipartBuilder.buildRequest(
+            serverURL: serverURL,
+            fileURL: fileURL
+        )
         
-        var request = URLRequest(url: serverURL)
-        request.httpMethod = "POST"
-        let boundary = UUID().uuidString
-        request.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+        let (data, _) = try await URLSession.shared.data(for: request)
         
-        var body = Data()
-        
-        // add file to request body
-        do {
-            let fileData = try Data(contentsOf: fileURL)
-            body.append("--\(boundary)\r\n".data(using: .utf8)!)
-            body.append("Content-Disposition: form-data; name=\"uploaded_file\"; filename=\"\(fileURL.lastPathComponent)\"\r\n".data(using: .utf8)!)
-            body.append("Content-Type: application/octet-stream\r\n\r\n".data(using: .utf8)!)
-            body.append(fileData)
-            body.append("\r\n".data(using: .utf8)!)
-            
-            body.append("--\(boundary)--\r\n".data(using: .utf8)!)
-            request.httpBody = body
-            
-            // send request
-            let task = URLSession.shared.dataTask(with: request) { data, response, error in
-                if let error = error {
-                    completion(.failure(error))
-                    return
-                }
-                guard let data = data else {
-                    completion(.failure(NSError(domain: "Response contains no data", code: -1)))
-                    return
-                }
-                // parse JSON
-                do {
-                    // let json = try JSONDecoder().decode(PrintResponse.self, from: data)
-                    // or
-                    // let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-                    if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                       let materialUsedString = json["materialUsed"] as? String,
-                       let materialUsed = Double(materialUsedString) {
-                        completion(.success(PrintResponse(materialUsed: materialUsed)))
-                    } else {
-                        completion(.failure(NSError(domain: "Invalid JSON", code: -2)))
-                    }
-                } catch {
-                    completion(.failure(error))
-                }
-            }
-            task.resume()
-        } catch {
-            completion(.failure(error))
-            return
-        }
+        return try responseParser.parsePrintResponse(data: data)
+    }
+    
+    func cancel() {
+        currentTask?.cancel()
     }
 }

@@ -21,30 +21,24 @@ final class PrintViewModel {
     }
     
     // File Upload Function
-    func uploadFile(serverAddress: String?, fileURL: URL?) {
+    func uploadFile(serverAddress: String?, fileURL: URL?) async {
         guard let serverAddress = serverAddress,
               let serverURL = URL(string: serverAddress),
               let fileURL = fileURL else {
             self.state = .error(message: "Check server address and try again")
             return
         }
-        
+        // uploading file
         state = .loading
-        
-        networkService.uploadFile(to: serverURL, fileURL: fileURL) { [weak self] result in
-            DispatchQueue.main.async {
-                switch result {
-                case .success(let response):
-                    let cost = response.materialUsed * (self?.materialDensity ?? 0) * (self?.moneyPerGram ?? 0)
-                    
-                    self?.state = .success(
-                        materialUsed: "Material used: \(response.materialUsed) mm³",
-                        printCost: "Print cost: \(String(format: "%.2f", cost)) BYN"
-                    )
-                case .failure(let error):
-                    self?.state = .error(message: "Error: \(error.localizedDescription)")
-                }
-            }
+        do {
+            let response = try await networkService.uploadFile(to: serverURL, fileURL: fileURL)
+            
+            let cost = response.materialUsed * (self.materialDensity) * (self.moneyPerGram)
+            self.state = .success(
+                materialUsed: "Material used: \(response.materialUsed) mm³",
+                printCost: "Print cost: \(String(format: "%.2f", cost)) BYN")
+        } catch {
+            self.state = .error(message: "Error: \(error.localizedDescription)")
         }
     }
     

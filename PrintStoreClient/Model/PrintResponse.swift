@@ -8,5 +8,13 @@
 import Foundation
 
 struct PrintResponse: Codable {
-    let materialUsed: Double
+    let materialUsedString: String
+    
+    var materialUsed: Double {
+        return Double(materialUsedString) ?? 0.0
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case materialUsedString = "materialUsed"
+    }
 }
