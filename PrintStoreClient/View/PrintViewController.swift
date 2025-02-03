@@ -126,36 +126,29 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     
     // ViewModel -> View
     private func bindViewModel() {
-        viewModel.$materialUsedText
+        viewModel.$state
             .receive(on: DispatchQueue.main)
-            .assign(to: \.text, on: resultLabel)
-            .store(in: &cancellables)
-        
-        viewModel.$printCostText
-            .receive(on: DispatchQueue.main)
-            .assign(to: \.text, on: printCostLabel)
-            .store(in: &cancellables)
-        
-        viewModel.$showAlert
-            .filter { $0.isShown }
-            .sink { [weak self] alert in
-                self?.showAlert(message: alert.message)
-                self?.viewModel.showAlert = (message: "", isShown: false)
-            }
-            .store(in: &cancellables)
-        
-        // stop loading animation
-        viewModel.$printCostText
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.costActivityIndicator.stopAnimating()
-            }
-            .store(in: &cancellables)
-        // stop loading animation
-        viewModel.$materialUsedText
-            .receive(on: DispatchQueue.main)
-            .sink { [weak self] _ in
-                self?.resultActivityIndicator.stopAnimating()
+            .sink { [weak self] state in
+                guard let self = self else { return }
+                switch state {
+                case .idle:
+                    self.resultLabel.text = "Material used: "
+                    self.printCostLabel.text = "Print cost: "
+                    self.resultActivityIndicator.startAnimating()
+                    self.costActivityIndicator.stopAnimating()
+                case .loading:
+                    self.resultActivityIndicator.startAnimating()
+                    self.costActivityIndicator.startAnimating()
+                case .success(let materialUsed, let printCost):
+                    self.resultLabel.text = materialUsed
+                    self.printCostLabel.text = printCost
+                    self.resultActivityIndicator.stopAnimating()
+                    self.costActivityIndicator.stopAnimating()
+                case .error(let message):
+                    self.showAlert(message: message)
+                    self.resultActivityIndicator.stopAnimating()
+                    self.costActivityIndicator.stopAnimating()
+                }
             }
             .store(in: &cancellables)
     }
