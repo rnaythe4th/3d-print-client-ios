@@ -11,8 +11,17 @@ import Combine
 
 class PrintViewController: UIViewController, UITextFieldDelegate {
     private var selectedFileURL: URL?
-    private var viewModel = PrintViewModel()
+    private let viewModel: PrintViewModel
     private var cancellables = Set<AnyCancellable>()
+    
+    init(viewModel: PrintViewModel) {
+        self.viewModel = viewModel
+        super.init(nibName: nil, bundle: nil)
+    }
+    
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
     
     // Text field to allow user to enter server address
     private let serverAddressTextField: UITextField = {
