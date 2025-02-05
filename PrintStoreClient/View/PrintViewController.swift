@@ -10,6 +10,9 @@ import SceneKit
 import Combine
 
 class PrintViewController: UIViewController, UITextFieldDelegate {
+    private var selectedFileURL: URL?
+    private var viewModel = PrintViewModel()
+    private var cancellables = Set<AnyCancellable>()
     
     // Text field to allow user to enter server address
     private let serverAddressTextField: UITextField = {
@@ -104,10 +107,6 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         spinner.translatesAutoresizingMaskIntoConstraints = false
         return spinner
     }()
-    
-    private var selectedFileURL: URL?
-    private var viewModel = PrintViewModel()
-    private var cancellables = Set<AnyCancellable>()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -320,67 +319,29 @@ extension PrintViewController: UIDocumentPickerDelegate {
         
         // close documentPicker automatically after selection is done
         dismiss(animated: true) { [weak self] in
+            guard let self = self else { return }
             // avoid access issues
-            if fileURL.startAccessingSecurityScopedResource() {
-                self?.loadModel(from: fileURL)
-                fileURL.stopAccessingSecurityScopedResource()
-            } else {
-                self?.showAlert(message: "Error accessing the file")
+            // security scoped
+            guard fileURL.startAccessingSecurityScopedResource() else {
+                self.showAlert(message: "Error accessing the file")
+                return
+            }
+            defer { fileURL.stopAccessingSecurityScopedResource() }
+            
+            // trying to load model
+            let modelLoader = ModelLoader()
+            do {
+                // delete old nodes
+                self.sceneView.scene?.rootNode.childNodes.forEach { $0.removeFromParentNode() }
+                // load new scene
+                let scene = try modelLoader.loadModel(from: fileURL)
+                // add all nodes from loaded scene to the main scene
+                for node in scene.rootNode.childNodes {
+                    self.sceneView.scene?.rootNode.addChildNode(node)
+                }
+            } catch {
+                self.showAlert(message: "Error loading model: \(error.localizedDescription)")
             }
         }
     }
-    
-    private func loadModel(from url: URL) {
-        do {
-            // Delete already loaded model
-            sceneView.scene?.rootNode.childNodes.forEach { $0.removeFromParentNode() }
-            
-            // Load new model
-            print("Attempt to load model: \(url.path)")
-            let scene = try SCNScene(url: url, options: nil)
-            print("Model successfully loaded")
-            for node in scene.rootNode.childNodes {
-                applyMaterialColor(UIColor.green, to: node)
-                sceneView.scene?.rootNode.addChildNode(node)
-            }
-            
-            // auto-scaling
-            let (min, max) = sceneView.scene!.rootNode.boundingBox
-            let size = SCNVector3(max.x - min.x, max.y - min.y, max.z - min.z)
-            let maxSize = Swift.max(size.x, size.y, size.z)
-            // set scale
-            let scale = Float(5.0 / maxSize)
-            
-            sceneView.scene?.rootNode.childNodes.forEach {
-                $0.scale = SCNVector3(scale, scale, scale)
-            }
-            
-        } catch {
-            print("Error loading model: \(error.localizedDescription)")
-            showAlert(message: "Error loading model: \(error.localizedDescription)")
-        }
-    }
-    
-    private func applyMaterialColor(_ color: UIColor, to node: SCNNode) {
-        let coloredMaterial = SCNMaterial()
-        coloredMaterial.diffuse.contents = color
-        
-        node.geometry?.materials = [coloredMaterial]
-        
-        for child in node.childNodes {
-            applyMaterialColor(color, to: child)
-        }
-    }
-    
-    /*
-     private var rotationAngle: Float = { return 0 }
-     
-     private func startRotation() {
-     sceneView.scene?.rootNode.childNodes.forEach { node in
-     let rotation = SCNAction.rotateBy(x: -, y: 2, z: -, duration: 10)
-     let repeatRotation = SCNAction.repeatForever(rotation)
-     node.runAction(repeatRotation)
-     }
-     }
-     */
 }
