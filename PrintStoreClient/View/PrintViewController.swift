@@ -13,6 +13,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     private var selectedFileURL: URL?
     private let viewModel: PrintViewModel
     private var cancellables = Set<AnyCancellable>()
+    private let filePickerService = FilePickerService()
     
     init(viewModel: PrintViewModel) {
         self.viewModel = viewModel
@@ -163,11 +164,19 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc private func selectFile() {
-        let documentPicker = UIDocumentPickerViewController(forOpeningContentTypes: [.item])
-        documentPicker.delegate = self
-        // temporary false
-        documentPicker.allowsMultipleSelection = false
-        present(documentPicker, animated: true)
+        filePickerService.pickFile(from: self) { [weak self] result in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                
+                switch result {
+                case .success(let fileURL):
+                    print("File selected at url: \(fileURL)")
+                    self.selectedFileURL = fileURL
+                case .failure(let error):
+                    self.showAlert(message: error.localizedDescription)
+                }
+            }
+        }
     }
     
     @objc private func uploadFile() {
@@ -318,39 +327,4 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     
     
     
-}
-
-extension PrintViewController: UIDocumentPickerDelegate {
-    func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-        guard let fileURL = urls.first else { return }
-        print("Selected file: \(fileURL)")
-        selectedFileURL = fileURL
-        
-        // close documentPicker automatically after selection is done
-        dismiss(animated: true) { [weak self] in
-            guard let self = self else { return }
-            // avoid access issues
-            // security scoped
-            guard fileURL.startAccessingSecurityScopedResource() else {
-                self.showAlert(message: "Error accessing the file")
-                return
-            }
-            defer { fileURL.stopAccessingSecurityScopedResource() }
-            
-            // trying to load model
-            let modelLoader = ModelLoader()
-            do {
-                // delete old nodes
-                self.sceneView.scene?.rootNode.childNodes.forEach { $0.removeFromParentNode() }
-                // load new scene
-                let scene = try modelLoader.loadModel(from: fileURL)
-                // add all nodes from loaded scene to the main scene
-                for node in scene.rootNode.childNodes {
-                    self.sceneView.scene?.rootNode.addChildNode(node)
-                }
-            } catch {
-                self.showAlert(message: "Error loading model: \(error.localizedDescription)")
-            }
-        }
-    }
 }
