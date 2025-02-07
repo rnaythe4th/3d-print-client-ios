@@ -14,6 +14,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     private let viewModel: PrintViewModel
     private var cancellables = Set<AnyCancellable>()
     private let filePickerService = FilePickerService()
+    private var currentIPAddress: String?
+    private var zoomTransitioningDelegate: ZoomOutTransitionDelegate?
     
     init(viewModel: PrintViewModel) {
         self.viewModel = viewModel
@@ -23,15 +25,6 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     required init?(coder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
-    
-    // Text field to allow user to enter server address
-    private let serverAddressTextField: UITextField = {
-        let textField = UITextField()
-        textField.placeholder = "Enter server address"
-        textField.borderStyle = .roundedRect
-        textField.translatesAutoresizingMaskIntoConstraints = false
-        return textField
-    }()
     
     // button for selecting file from storage
     private let selectFileButton: UIButton = {
@@ -124,9 +117,17 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         setupActions()
         setupScene()
         bindViewModel()
-        serverAddressTextField.delegate = self
+        //        serverAddressTextField.delegate = self
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(dismissKeyboard))
         view.addGestureRecognizer(tapGesture)
+        
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            title: currentIPAddress ?? "Select IP",
+            style: .plain,
+            target: self,
+            action: #selector(showIPAddressPicker)
+        )
+        
         viewModel.state = .idle
     }
     
@@ -188,9 +189,12 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
-        //        if fileURL.startAccessingSecurityScopedResource() {
-        //            defer { fileURL.stopAccessingSecurityScopedResource() }
-        
+        guard let ip = currentIPAddress,
+              !ip.isEmpty,
+              let serverURL = URL(string: ip) else {
+            showAlert(message: "Server IP not selected or invalid")
+            return
+        }
         
         Task {
             do {
@@ -201,7 +205,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                     }
                 }
                 try await viewModel.uploadFile(
-                    serverAddress: serverAddressTextField.text,
+                    serverAddress: (ip + ":4000/slice"),
                     fileURL: fileURL
                 )
             } catch {
@@ -218,7 +222,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     private func setupUI() {
         view.backgroundColor = .systemBackground
         
-        view.addSubview(serverAddressTextField)
+        //        view.addSubview(serverAddressTextField)
         view.addSubview(selectFileButton)
         view.addSubview(uploadButton)
         view.addSubview(resultLabel)
@@ -230,13 +234,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         
         NSLayoutConstraint.activate([
             
-            // server address Text Field
-            serverAddressTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
-            serverAddressTextField.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            serverAddressTextField.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
             // "Select File" button
-            selectFileButton.topAnchor.constraint(equalTo: serverAddressTextField.bottomAnchor, constant: 20),
+            selectFileButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
             selectFileButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             // "Upload to server" button
@@ -325,6 +324,28 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         costActivityIndicator.startAnimating()
     }
     
-    
-    
+    @objc private func showIPAddressPicker() {
+        let ipPickerVC = IPAddressPickerView()
+        ipPickerVC.delegate = self
+        
+        let nav = UINavigationController(rootViewController: ipPickerVC)
+        
+        // custom animation
+        nav.modalPresentationStyle = .custom
+        
+        // create transition delegate
+        let transitionDelegate = ZoomOutTransitionDelegate()
+        self.zoomTransitioningDelegate = transitionDelegate
+        nav.transitioningDelegate = transitionDelegate
+       
+        //nav.modalPresentationStyle = .popover
+        present(nav, animated: true)
+    }
+}
+
+extension PrintViewController: IPAddressPickerDelegate {
+    func didSelectIPAddress(_ ip: String) {
+        self.currentIPAddress = ip
+        navigationItem.rightBarButtonItem?.title = ip
+    }
 }

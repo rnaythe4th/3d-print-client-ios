@@ -21,8 +21,10 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         let viewModel = PrintViewModel()
         let printVC = PrintViewController(viewModel: viewModel)
         
+        let navigationController = UINavigationController(rootViewController: printVC)
+        
         window = UIWindow(windowScene: windowScene)
-        window?.rootViewController = printVC // Ваш основной контроллер
+        window?.rootViewController = navigationController
         window?.makeKeyAndVisible()
     }
 
