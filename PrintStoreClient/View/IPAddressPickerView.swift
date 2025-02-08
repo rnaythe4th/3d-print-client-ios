@@ -17,7 +17,7 @@ final class IPAddressPickerView: UIViewController, UITableViewDataSource, UITabl
     
     private let textField: UITextField = {
         let textField = UITextField()
-        textField.backgroundColor = .elementDynamic
+        textField.backgroundColor = .modalElementDynamic
         textField.layer.cornerRadius = 8
         textField.clipsToBounds = true
         textField.placeholder = "Enter new IP address"
@@ -65,7 +65,7 @@ final class IPAddressPickerView: UIViewController, UITableViewDataSource, UITabl
     
     private let tableView: UITableView = {
         let tv = UITableView()
-        tv.backgroundColor = .backgroundDynamic
+        tv.backgroundColor = .modalBackgroundDynamic
         tv.translatesAutoresizingMaskIntoConstraints = false
         return tv
     }()
@@ -80,7 +80,7 @@ final class IPAddressPickerView: UIViewController, UITableViewDataSource, UITabl
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = .backgroundDynamic
+        view.backgroundColor = .modalBackgroundDynamic
         title = "Select IP address"
         
         navigationItem.leftBarButtonItem = UIBarButtonItem(
@@ -229,7 +229,7 @@ final class IPAddressPickerView: UIViewController, UITableViewDataSource, UITabl
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell") ?? UITableViewCell(style: .default, reuseIdentifier: "cell")
         cell.textLabel?.text = ipAddressService.recentIPAddresses[indexPath.row]
-        cell.backgroundColor = .elementDynamic
+        cell.backgroundColor = .modalElementDynamic
         
         // in case there is only one row, round all edges
         if tableView.numberOfRows(inSection: indexPath.section) == 1 {
@@ -296,42 +296,71 @@ final class IPAddressPickerView: UIViewController, UITableViewDataSource, UITabl
         
         return configuration
     }
-    
+   
     @objc private func handlePan(_ gesture: UIPanGestureRecognizer) {
-        let container = self.navigationController?.view ?? self.view
+        let modalContainer = self.navigationController?.view ?? self.view
+        guard let backgroundView = self.presentingViewController?.view else { return }
         
-        let translation = gesture.translation(in: view)
-        let velocity = gesture.velocity(in: view)
+        let translation = gesture.translation(in: modalContainer)
+        let velocity = gesture.velocity(in: modalContainer)
+        
+        // max distance where progress = 1
+        let maxDistance: CGFloat = backgroundView.bounds.height * 0.55
+        // define progress
+        let progress = min(1, translation.y / maxDistance)
+        
+        // configure backgroundView
+        // !!! MUST BE CHANGED when these values are being changed in Animator  !!!
+        let initialScale: CGFloat = 0.92
+        let finalScale: CGFloat = 1
+        let scale = initialScale + (finalScale - initialScale) * progress
+        
+        let initialTranslation: CGFloat = 30
+        let finalTranslation: CGFloat = 0
+        let bgTranslation = initialTranslation + (finalTranslation - initialTranslation) * progress
+        
+        let backgroundTransform = CGAffineTransform(scaleX: scale, y: scale)
+            .concatenating(CGAffineTransform(translationX: 0, y: bgTranslation))
+        
+        let modalTransform = CGAffineTransform(translationX: 0, y: translation.y)
         
         switch gesture.state {
         case .began:
             break
         case .changed:
             if translation.y > 0 {
-                container?.transform = CGAffineTransform(translationX: 0, y: translation.y)
+                modalContainer?.transform = modalTransform
+                backgroundView.transform = backgroundTransform
             }
         case .ended, .cancelled:
-            let threshold = view.bounds.height * 0.25
+            let threshold = (modalContainer?.bounds.height ?? 0) * 0.25
             if translation.y  > threshold || velocity.y > 1000 {
                 // calculate animation time remaining
-                let remainingDistance = view.bounds.height - translation.y
-                let animationDuration = max(0.1, min(0.3, TimeInterval(remainingDistance / velocity.y)))
+                let containerHeight = modalContainer?.bounds.height ?? 0
+                let remainingDistance = containerHeight - translation.y
+                let animationDuration = max(0.1, min(0.3, TimeInterval(remainingDistance / abs(velocity.y))))
                 UIView.animate(
                     withDuration: animationDuration,
                     delay: 0,
                     options: [.curveEaseOut],
                     animations: {
-                        container?.transform = CGAffineTransform(translationX: 0, y: self.view.bounds.height)
+                        modalContainer?.transform = CGAffineTransform(translationX: 0, y: containerHeight)
+                        backgroundView.transform = .identity
                     }, completion: {_ in
-                        self.dismiss(animated: true, completion: nil)
+                        self.dismiss(animated: false, completion: nil)
                     }
                 )
             } else {
+                let initialBackgroundTransform = CGAffineTransform(scaleX: initialScale, y: initialScale)
+                    .concatenating(CGAffineTransform(translationX: 0, y: initialTranslation))
                 UIView.animate(
                     withDuration: 0.3,
                     delay: 0,
                     options: [.curveEaseInOut],
-                    animations: { container?.transform = .identity },
+                    animations: {
+                        modalContainer?.transform = .identity
+                        backgroundView.transform = initialBackgroundTransform
+                    },
                     completion: nil
                 )
             }

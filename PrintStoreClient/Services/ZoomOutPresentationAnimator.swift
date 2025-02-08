@@ -31,8 +31,10 @@ class ZoomOutPresentationAnimator: NSObject, UIViewControllerAnimatedTransitioni
         if isPresenting {
             // dimming view to make status-bar look static
             let dimmingView = UIView(frame: containerView.bounds)
-            dimmingView.backgroundColor = UIColor.black.withAlphaComponent(0.3)
-            dimmingView.alpha = 0
+            dimmingView.backgroundColor = UIColor.black.withAlphaComponent(0)
+            //dimmingView.alpha = 0
+            dimmingView.tag = 999
+            dimmingView.accessibilityIdentifier = "dimmingView"
             containerView.addSubview(dimmingView)
             self.dimmingView = dimmingView
             
@@ -71,11 +73,11 @@ class ZoomOutPresentationAnimator: NSObject, UIViewControllerAnimatedTransitioni
                 options: [.curveEaseOut],
                 animations: {
                     // make dimmingView visible
-                    dimmingView.alpha = 1
+                    //dimmingView.alpha = 1
                     // move modal up
                     toView.frame = finalFrame
                     // background scale
-                    fromView.transform = CGAffineTransform(scaleX: 0.95, y: 0.95)
+                    fromView.transform = CGAffineTransform(scaleX: 0.92, y: 0.92)
                         .translatedBy(x: 0, y: 30)
                 },
                 completion: { finished in
@@ -94,7 +96,7 @@ class ZoomOutPresentationAnimator: NSObject, UIViewControllerAnimatedTransitioni
                 //initialSpringVelocity: 0.5,
                 options: [.curveEaseOut],
                 animations: {
-                    self.dimmingView?.alpha = 0
+                    //self.dimmingView?.alpha = 0
                     // move modal away
                     fromView.frame = fromView.frame.offsetBy(dx: 0, dy: containerView.bounds.height)
                     // restore background
