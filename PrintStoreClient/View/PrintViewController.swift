@@ -26,65 +26,90 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         fatalError("init(coder:) has not been implemented")
     }
     
+    private let accentColor = UIColor(red: 0.10, green: 0.46, blue: 0.82, alpha: 1.00)
+    private let lightAccent = UIColor(red: 0.10, green: 0.46, blue: 0.82, alpha: 0.15)
+    
     // button for selecting file from storage
-    private let selectFileButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Select file", for: .normal)
-        button.setTitleColor(.systemBlue, for: .normal)
-        
-        if #available(iOS 15.0, *) {
-            var config = UIButton.Configuration.filled()
-            
-            config.baseBackgroundColor = .clear
-            config.baseForegroundColor = .systemBlue
-            config.background.strokeColor = .systemBlue
-            config.background.strokeWidth = 1
-            config.background.cornerRadius = 8
-            config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
-            
-            button.configuration = config
-        } else {
-            button.layer.borderWidth = 1
-            button.layer.borderColor = UIColor.systemBlue.cgColor
-            button.layer.cornerRadius = 8
-            button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
-        }
-        
+    private lazy var selectFileButton: UIButton = {
+        let button = UIButton(type: .system)
+        var config = UIButton.Configuration.filled()
+        config.title = "Select File"
+        config.image = UIImage(systemName: "folder")
+        config.imagePadding = 8
+        config.imagePlacement = .leading
+        config.baseBackgroundColor = lightAccent
+        config.baseForegroundColor = accentColor
+        config.background.cornerRadius = 14
+        config.contentInsets = NSDirectionalEdgeInsets(top: 12, leading: 20, bottom: 12, trailing: 20)
+        button.configuration = config
+        button.applyShadow(opacity: 0.1, radius: 8)
         button.translatesAutoresizingMaskIntoConstraints = false
+        
         return button
     }()
     
     // upload to server button
-    private let uploadButton: UIButton = {
-        let button = UIButton()
-        button.setTitle("Upload to server", for: .normal)
-        button.setTitleColor(.white, for: .normal)
-        button.backgroundColor = .systemBlue
-        button.layer.cornerRadius = 8
+    private lazy var uploadButton: UIButton = {
+        let button = UIButton(type: .system)
+        var config = UIButton.Configuration.filled()
+        config.title = "Calculate Print Cost"
+        config.baseBackgroundColor = accentColor
+        config.baseForegroundColor = .white
+        config.background.cornerRadius = 14
+        config.contentInsets = NSDirectionalEdgeInsets(top: 16, leading: 24, bottom: 16, trailing: 24)
+        config.titleTextAttributesTransformer = UIConfigurationTextAttributesTransformer { incoming in
+            var outgoing = incoming
+            outgoing.font = .systemFont(ofSize: 17, weight: .semibold)
+            return outgoing
+        }
+        button.configuration = config
+        button.applyShadow(opacity: 0.2, radius: 10)
         button.translatesAutoresizingMaskIntoConstraints = false
         return button
     }()
     
-    // result from server Label
-    private let resultLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Print cost: "
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
+    private lazy var infoStack: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 12
+        stack.distribution = .fillEqually
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        return stack
     }()
     
-    private let printCostLabel: UILabel = {
-        let label = UILabel()
-        label.text = "Print cost: "
-        label.translatesAutoresizingMaskIntoConstraints = false
-        return label
-    }()
+    private func createInfoRow(title: String) -> UIStackView {
+        let stack = UIStackView()
+        stack.axis = .horizontal
+        stack.distribution = .fill
+        
+        let titleLabel = UILabel()
+        titleLabel.text = title
+        titleLabel.font = .systemFont(ofSize: 15, weight: .medium)
+        titleLabel.textColor = .secondaryLabel
+        
+        let valueLabel = UILabel()
+        valueLabel.text = "-"
+        valueLabel.font = .monospacedDigitSystemFont(ofSize: 16, weight: .semibold)
+        valueLabel.textColor = .label
+        valueLabel.textAlignment = .right
+        
+        stack.addArrangedSubview(titleLabel)
+        stack.addArrangedSubview(valueLabel)
+        return stack
+    }
     
     private let previewContainer: UIView = {
         let view = UIView()
-        view.backgroundColor = .systemGray
-        view.layer.cornerRadius = 12
+        view.backgroundColor = .white
+        view.layer.cornerRadius = 24
+        view.applyShadow(
+            opacity: 0.5,
+            radius: 50,
+            offset: CGSize(width: 0, height: 16),
+            color: UIColor(red: 0, green: 0, blue: 0, alpha: 0.4)
+        )
         view.translatesAutoresizingMaskIntoConstraints = false
+        view.clipsToBounds = false
         return view
     }()
     
@@ -97,15 +122,9 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         return view
     }()
     
-    private let resultActivityIndicator: UIActivityIndicatorView = {
+    private lazy var loadingIndicator: UIActivityIndicatorView = {
         let spinner = UIActivityIndicatorView(style: .medium)
-        spinner.hidesWhenStopped = true
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        return spinner
-    }()
-    
-    private let costActivityIndicator: UIActivityIndicatorView = {
-        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = accentColor
         spinner.hidesWhenStopped = true
         spinner.translatesAutoresizingMaskIntoConstraints = false
         return spinner
@@ -113,12 +132,35 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     
     private let previewPlaceholderLabel: UILabel = {
         let label = UILabel()
-        label.text = "Select a model for preview"
-        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
-        label.textColor = .white
+        label.text = "Select a 3D Model to Preview"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .semibold)
+        label.textColor = UIColor(red: 0.80, green: 0.80, blue: 0.80, alpha: 1)
         label.textAlignment = .center
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
+    }()
+    
+    private let ipAddressButton: UIButton = {
+        let button = UIButton()
+        button.setTitle("Select IP", for: .normal)
+        button.setTitleColor(.systemBlue, for: .normal)
+        if #available(iOS 15.0, *) {
+            var config = UIButton.Configuration.filled()
+            config.baseBackgroundColor = .clear
+            config.baseForegroundColor = .systemBlue
+            //config.background.strokeColor = .systemBlue
+            //config.background.strokeWidth = 1
+            //config.background.cornerRadius = 8
+            config.contentInsets = NSDirectionalEdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12)
+            button.configuration = config
+        } else {
+            //button.layer.borderWidth = 1
+            //button.layer.borderColor = UIColor.systemBlue.cgColor
+            //button.layer.cornerRadius = 8
+            button.contentEdgeInsets = UIEdgeInsets(top: 8, left: 12, bottom: 8, right: 12)
+        }
+        button.translatesAutoresizingMaskIntoConstraints = false
+        return button
     }()
     
     override func viewDidLoad() {
@@ -137,8 +179,21 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             target: self,
             action: #selector(showIPAddressPicker)
         )
+        let settingsButton = UIBarButtonItem(image: UIImage(systemName: "gear"),
+                                                   style: .plain,
+                                                   target: self,
+                                                   action: #selector(settingsButtonTapped))
+            navigationItem.leftBarButtonItem = settingsButton
         
         viewModel.state = .idle
+    }
+    
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        previewContainer.layer.shadowPath = UIBezierPath(
+            roundedRect: previewContainer.bounds,
+            cornerRadius: previewContainer.layer.cornerRadius
+        ).cgPath
     }
     
     @objc private func dismissKeyboard() {
@@ -153,22 +208,16 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                 guard let self = self else { return }
                 switch state {
                 case .idle:
-                    self.resultLabel.text = "Material used: "
-                    self.printCostLabel.text = "Print cost: "
-                    self.resultActivityIndicator.stopAnimating()
-                    self.costActivityIndicator.stopAnimating()
+                    self.updateInfoLabels(material: "-", cost: "-")
+                    self.loadingIndicator.stopAnimating()
                 case .loading:
-                    self.resultActivityIndicator.startAnimating()
-                    self.costActivityIndicator.startAnimating()
+                    self.loadingIndicator.startAnimating()
                 case .success(let materialUsed, let printCost):
-                    self.resultLabel.text = materialUsed
-                    self.printCostLabel.text = printCost
-                    self.resultActivityIndicator.stopAnimating()
-                    self.costActivityIndicator.stopAnimating()
+                    self.updateInfoLabels(material: materialUsed, cost: printCost)
+                    self.loadingIndicator.stopAnimating()
                 case .error(let message):
                     self.showAlert(message: message)
-                    self.resultActivityIndicator.stopAnimating()
-                    self.costActivityIndicator.stopAnimating()
+                    self.loadingIndicator.stopAnimating()
                 }
             }
             .store(in: &cancellables)
@@ -217,8 +266,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc private func uploadFile() {
-        resultActivityIndicator.startAnimating()
-        costActivityIndicator.startAnimating()
+//        resultActivityIndicator.startAnimating()
+//        costActivityIndicator.startAnimating()
         
         guard let fileURL = selectedFileURL else {
             showAlert(message: "File not selected")
@@ -247,8 +296,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             } catch {
                 await MainActor.run {
                     showAlert(message: error.localizedDescription)
-                    resultActivityIndicator.stopAnimating()
-                    costActivityIndicator.stopAnimating()
+//                    resultActivityIndicator.stopAnimating()
+//                    costActivityIndicator.stopAnimating()
                 }
             }
         }
@@ -257,45 +306,43 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     
     private func setupUI() {
         view.backgroundColor = .systemBackground
+        navigationController?.navigationBar.prefersLargeTitles = true
+        navigationItem.largeTitleDisplayMode = .always
+        self.title = "Calculate print cost"
         
-        //        view.addSubview(serverAddressTextField)
+        let materialRow = createInfoRow(title: "Material used:")
+        let costRow = createInfoRow(title: "Total cost:")
+        infoStack.addArrangedSubview(materialRow)
+        infoStack.addArrangedSubview(costRow)
+        
         view.addSubview(selectFileButton)
         view.addSubview(uploadButton)
-        view.addSubview(resultLabel)
-        view.addSubview(printCostLabel)
+        view.addSubview(infoStack)
         view.addSubview(previewContainer)
         previewContainer.addSubview(sceneView)
         previewContainer.addSubview(previewPlaceholderLabel)
-        view.addSubview(resultActivityIndicator)
-        view.addSubview(costActivityIndicator)
+        view.addSubview(loadingIndicator)
         
         NSLayoutConstraint.activate([
             
             // "Select File" button
-            selectFileButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
+            selectFileButton.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 24),
             selectFileButton.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             
             // "Upload to server" button
-            uploadButton.topAnchor.constraint(equalTo: selectFileButton.bottomAnchor, constant: 20),
-            uploadButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            uploadButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            uploadButton.heightAnchor.constraint(equalToConstant: 44),
+            uploadButton.topAnchor.constraint(equalTo: selectFileButton.bottomAnchor, constant: 24),
+            uploadButton.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            uploadButton.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             
-            // "Filament used" label
-            resultLabel.topAnchor.constraint(equalTo: uploadButton.bottomAnchor, constant: 20),
-            resultLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            //resultLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
-            
-            // "Print cost" label
-            printCostLabel.topAnchor.constraint(equalTo: resultLabel.bottomAnchor, constant: 10),
-            printCostLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            //printCostLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            infoStack.topAnchor.constraint(equalTo: uploadButton.bottomAnchor, constant: 24),
+            infoStack.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            infoStack.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
             
             // 3D-Model preview container
-            previewContainer.topAnchor.constraint(equalTo: printCostLabel.bottomAnchor, constant: 20),
-            previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            previewContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
-            previewContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -20),
+            previewContainer.topAnchor.constraint(equalTo: infoStack.bottomAnchor, constant: 32),
+            previewContainer.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
+            previewContainer.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            previewContainer.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor, constant: -40),
             
             // Scene view inside previewContainer
             // *** same as parent ***
@@ -304,15 +351,11 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             sceneView.trailingAnchor.constraint(equalTo: previewContainer.trailingAnchor),
             sceneView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
             
-            // loading animation for Filament used
-            resultActivityIndicator.centerYAnchor.constraint(equalTo: resultLabel.centerYAnchor),
-            resultActivityIndicator.leadingAnchor.constraint(equalTo: resultLabel.trailingAnchor, constant: 8),
-            // loading animation for Print cost
-            costActivityIndicator.centerYAnchor.constraint(equalTo: printCostLabel.centerYAnchor),
-            costActivityIndicator.leadingAnchor.constraint(equalTo: printCostLabel.trailingAnchor, constant: 8),
-            
             previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
-            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor)
+            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
+            
+            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingIndicator.topAnchor.constraint(equalTo: infoStack.bottomAnchor, constant: 20)
         ])
     }
     
@@ -360,8 +403,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     private func startLoading() {
-        resultActivityIndicator.startAnimating()
-        costActivityIndicator.startAnimating()
+//        resultActivityIndicator.startAnimating()
+//        costActivityIndicator.startAnimating()
     }
     
     @objc private func showIPAddressPicker() {
@@ -380,11 +423,56 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         //nav.modalPresentationStyle = .popover
         present(nav, animated: true)
     }
+    
+    @objc private func settingsButtonTapped() {
+        let controller = SettingsView()
+        if let sheetController = controller.sheetPresentationController {
+            sheetController.detents = [.medium(), .large()]
+        }
+        present(controller, animated: true)
+    }
+    
+//    @objc private func openSheetsView() {
+//        let vc = SheetsView()
+//        self.navigationController?.pushViewController(vc, animated: true)
+//    }
+    
+    private func updateInfoLabels(material: String, cost: String) {
+        guard let materialRow = infoStack.arrangedSubviews[0] as? UIStackView,
+              let costRow = infoStack.arrangedSubviews[1] as? UIStackView else { return }
+        
+        (materialRow.arrangedSubviews[1] as? UILabel)?.text = material
+        (costRow.arrangedSubviews[1] as? UILabel)?.text = cost
+    }
+
 }
 
 extension PrintViewController: IPAddressPickerDelegate {
     func didSelectIPAddress(_ ip: String) {
         self.currentIPAddress = ip
         navigationItem.rightBarButtonItem?.title = ip
+    }
+}
+
+extension UIView {
+    func applyShadow(opacity: Float, radius: CGFloat,
+                       offset: CGSize = .zero,
+                       color: UIColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.4)) {
+            layer.shadowColor = color.cgColor
+            layer.shadowOpacity = opacity
+            layer.shadowRadius = radius
+            layer.shadowOffset = offset
+            layer.shouldRasterize = true
+            layer.rasterizationScale = UIScreen.main.scale
+            layer.masksToBounds = false
+        }
+}
+
+extension UIView {
+    func updateShadowPath() {
+        layer.shadowPath = UIBezierPath(
+            roundedRect: bounds,
+            cornerRadius: layer.cornerRadius
+        ).cgPath
     }
 }
