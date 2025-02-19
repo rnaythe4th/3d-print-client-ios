@@ -111,6 +111,16 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         return spinner
     }()
     
+    private let previewPlaceholderLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Select a model for preview"
+        label.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        label.textColor = .white
+        label.textAlignment = .center
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -229,6 +239,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(printCostLabel)
         view.addSubview(previewContainer)
         previewContainer.addSubview(sceneView)
+        previewContainer.addSubview(previewPlaceholderLabel)
         view.addSubview(resultActivityIndicator)
         view.addSubview(costActivityIndicator)
         
@@ -272,7 +283,10 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             resultActivityIndicator.leadingAnchor.constraint(equalTo: resultLabel.trailingAnchor, constant: 8),
             // loading animation for Print cost
             costActivityIndicator.centerYAnchor.constraint(equalTo: printCostLabel.centerYAnchor),
-            costActivityIndicator.leadingAnchor.constraint(equalTo: printCostLabel.trailingAnchor, constant: 8)
+            costActivityIndicator.leadingAnchor.constraint(equalTo: printCostLabel.trailingAnchor, constant: 8),
+            
+            previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
+            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor)
         ])
     }
     
@@ -337,7 +351,6 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         let transitionDelegate = ZoomOutTransitionDelegate()
         self.zoomTransitioningDelegate = transitionDelegate
         nav.transitioningDelegate = transitionDelegate
-       
         //nav.modalPresentationStyle = .popover
         present(nav, animated: true)
     }
