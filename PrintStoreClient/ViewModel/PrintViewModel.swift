@@ -22,6 +22,7 @@ final class PrintViewModel {
     
     // File Upload Function
     func uploadFile(serverAddress: String?, fileURL: URL?) async {
+        print("(Model) Server address: \(serverAddress)")
         guard let serverAddress = serverAddress,
               let serverURL = URL(string: serverAddress) else {
             self.state = .error(message: PrintError.invalidServerAddress.errorDescription ?? "Error")
@@ -38,8 +39,8 @@ final class PrintViewModel {
             
             let cost = response.materialUsed * (self.materialDensity) * (self.moneyPerGram)
             self.state = .success(
-                materialUsed: "Material used: \(response.materialUsed) mm³",
-                printCost: "Print cost: \(String(format: "%.2f", cost)) BYN")
+                materialUsed: "\(response.materialUsed) mm³",
+                printCost: "\(String(format: "%.2f", cost)) BYN")
         } catch {
             if let printError = error as? PrintError {
                 self.state = .error(message: printError.errorDescription ?? error.localizedDescription)

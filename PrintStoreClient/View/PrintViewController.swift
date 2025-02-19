@@ -78,24 +78,36 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }()
     
     private func createInfoRow(title: String) -> UIStackView {
-        let stack = UIStackView()
-        stack.axis = .horizontal
-        stack.distribution = .fill
+        let rowStack = UIStackView()
+        rowStack.axis = .horizontal
+        rowStack.spacing = 8
+        rowStack.alignment = .center
         
         let titleLabel = UILabel()
         titleLabel.text = title
         titleLabel.font = .systemFont(ofSize: 15, weight: .medium)
         titleLabel.textColor = .secondaryLabel
         
+        let valueStack = UIStackView()
+        valueStack.axis = .horizontal
+        valueStack.spacing = 8
+        
         let valueLabel = UILabel()
         valueLabel.text = "-"
         valueLabel.font = .monospacedDigitSystemFont(ofSize: 16, weight: .semibold)
         valueLabel.textColor = .label
-        valueLabel.textAlignment = .right
         
-        stack.addArrangedSubview(titleLabel)
-        stack.addArrangedSubview(valueLabel)
-        return stack
+        let spinner = UIActivityIndicatorView(style: .medium)
+        spinner.color = accentColor
+        spinner.hidesWhenStopped = true
+        spinner.tag = 100 // Для идентификации
+        
+        valueStack.addArrangedSubview(valueLabel)
+        valueStack.addArrangedSubview(spinner)
+        
+        rowStack.addArrangedSubview(titleLabel)
+        rowStack.addArrangedSubview(valueStack)
+        return rowStack
     }
     
     private let previewContainer: UIView = {
@@ -122,13 +134,13 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         return view
     }()
     
-    private lazy var loadingIndicator: UIActivityIndicatorView = {
-        let spinner = UIActivityIndicatorView(style: .medium)
-        spinner.color = accentColor
-        spinner.hidesWhenStopped = true
-        spinner.translatesAutoresizingMaskIntoConstraints = false
-        return spinner
-    }()
+//    private lazy var loadingIndicator: UIActivityIndicatorView = {
+//        let spinner = UIActivityIndicatorView(style: .medium)
+//        spinner.color = accentColor
+//        spinner.hidesWhenStopped = true
+//        spinner.translatesAutoresizingMaskIntoConstraints = false
+//        return spinner
+//    }()
     
     private let previewPlaceholderLabel: UILabel = {
         let label = UILabel()
@@ -180,10 +192,10 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             action: #selector(showIPAddressPicker)
         )
         let settingsButton = UIBarButtonItem(image: UIImage(systemName: "gear"),
-                                                   style: .plain,
-                                                   target: self,
-                                                   action: #selector(settingsButtonTapped))
-            navigationItem.leftBarButtonItem = settingsButton
+                                             style: .plain,
+                                             target: self,
+                                             action: #selector(settingsButtonTapped))
+        navigationItem.leftBarButtonItem = settingsButton
         
         viewModel.state = .idle
     }
@@ -206,18 +218,33 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] state in
                 guard let self = self else { return }
+                
+                guard let materialRow = self.infoStack.arrangedSubviews[0] as? UIStackView,
+                      let costRow = self.infoStack.arrangedSubviews[1] as? UIStackView,
+                      let materialSpinner = materialRow.viewWithTag(100) as? UIActivityIndicatorView,
+                      let costSpinner = costRow.viewWithTag(100) as? UIActivityIndicatorView,
+                      let materialLabel = (materialRow.arrangedSubviews[1] as? UIStackView)?.arrangedSubviews[0] as? UILabel,
+                      let costLabel = (costRow.arrangedSubviews[1] as? UIStackView)?.arrangedSubviews[0] as? UILabel else { return }
+                
                 switch state {
                 case .idle:
                     self.updateInfoLabels(material: "-", cost: "-")
-                    self.loadingIndicator.stopAnimating()
+                    materialSpinner.stopAnimating()
+                    costSpinner.stopAnimating()
                 case .loading:
-                    self.loadingIndicator.startAnimating()
+                    materialSpinner.startAnimating()
+                    costSpinner.startAnimating()
+                    materialLabel.text = "Calculating..."
+                    costLabel.text = "Calculating..."
                 case .success(let materialUsed, let printCost):
-                    self.updateInfoLabels(material: materialUsed, cost: printCost)
-                    self.loadingIndicator.stopAnimating()
+                    materialLabel.text = materialUsed
+                    costLabel.text = printCost
+                    materialSpinner.stopAnimating()
+                    costSpinner.stopAnimating()
                 case .error(let message):
                     self.showAlert(message: message)
-                    self.loadingIndicator.stopAnimating()
+                    materialSpinner.stopAnimating()
+                    costSpinner.stopAnimating()
                 }
             }
             .store(in: &cancellables)
@@ -266,8 +293,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     @objc private func uploadFile() {
-//        resultActivityIndicator.startAnimating()
-//        costActivityIndicator.startAnimating()
+        //        resultActivityIndicator.startAnimating()
+        //        costActivityIndicator.startAnimating()
         
         guard let fileURL = selectedFileURL else {
             showAlert(message: "File not selected")
@@ -281,6 +308,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             return
         }
         
+        let fullAddress = "http://\(ip):4000/slice"
+        
         Task {
             do {
                 let didStartAccessing = fileURL.startAccessingSecurityScopedResource()
@@ -290,14 +319,14 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                     }
                 }
                 try await viewModel.uploadFile(
-                    serverAddress: (ip + ":4000/slice"),
+                    serverAddress: fullAddress,
                     fileURL: fileURL
                 )
             } catch {
                 await MainActor.run {
                     showAlert(message: error.localizedDescription)
-//                    resultActivityIndicator.stopAnimating()
-//                    costActivityIndicator.stopAnimating()
+                    //                    resultActivityIndicator.stopAnimating()
+                    //                    costActivityIndicator.stopAnimating()
                 }
             }
         }
@@ -321,7 +350,6 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         view.addSubview(previewContainer)
         previewContainer.addSubview(sceneView)
         previewContainer.addSubview(previewPlaceholderLabel)
-        view.addSubview(loadingIndicator)
         
         NSLayoutConstraint.activate([
             
@@ -352,10 +380,10 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
             sceneView.bottomAnchor.constraint(equalTo: previewContainer.bottomAnchor),
             
             previewPlaceholderLabel.centerXAnchor.constraint(equalTo: previewContainer.centerXAnchor),
-            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor),
+            previewPlaceholderLabel.centerYAnchor.constraint(equalTo: previewContainer.centerYAnchor)
             
-            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loadingIndicator.topAnchor.constraint(equalTo: infoStack.bottomAnchor, constant: 20)
+//            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+//            loadingIndicator.topAnchor.constraint(equalTo: infoStack.bottomAnchor, constant: 20)
         ])
     }
     
@@ -403,8 +431,8 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
     }
     
     private func startLoading() {
-//        resultActivityIndicator.startAnimating()
-//        costActivityIndicator.startAnimating()
+        //        resultActivityIndicator.startAnimating()
+        //        costActivityIndicator.startAnimating()
     }
     
     @objc private func showIPAddressPicker() {
@@ -432,10 +460,10 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         present(controller, animated: true)
     }
     
-//    @objc private func openSheetsView() {
-//        let vc = SheetsView()
-//        self.navigationController?.pushViewController(vc, animated: true)
-//    }
+    //    @objc private func openSheetsView() {
+    //        let vc = SheetsView()
+    //        self.navigationController?.pushViewController(vc, animated: true)
+    //    }
     
     private func updateInfoLabels(material: String, cost: String) {
         guard let materialRow = infoStack.arrangedSubviews[0] as? UIStackView,
@@ -444,7 +472,7 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
         (materialRow.arrangedSubviews[1] as? UILabel)?.text = material
         (costRow.arrangedSubviews[1] as? UILabel)?.text = cost
     }
-
+    
 }
 
 extension PrintViewController: IPAddressPickerDelegate {
@@ -456,16 +484,16 @@ extension PrintViewController: IPAddressPickerDelegate {
 
 extension UIView {
     func applyShadow(opacity: Float, radius: CGFloat,
-                       offset: CGSize = .zero,
-                       color: UIColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.4)) {
-            layer.shadowColor = color.cgColor
-            layer.shadowOpacity = opacity
-            layer.shadowRadius = radius
-            layer.shadowOffset = offset
-            layer.shouldRasterize = true
-            layer.rasterizationScale = UIScreen.main.scale
-            layer.masksToBounds = false
-        }
+                     offset: CGSize = .zero,
+                     color: UIColor = UIColor(red: 0, green: 0, blue: 0, alpha: 0.4)) {
+        layer.shadowColor = color.cgColor
+        layer.shadowOpacity = opacity
+        layer.shadowRadius = radius
+        layer.shadowOffset = offset
+        layer.shouldRasterize = true
+        layer.rasterizationScale = UIScreen.main.scale
+        layer.masksToBounds = false
+    }
 }
 
 extension UIView {
