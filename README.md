@@ -9,10 +9,10 @@
 Основной стек: Swift, UIKit, SceneKit.
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="Screenshots/Screenshot_1.PNG" height="300">
+  <img src="Screenshots/Screenshot_2.PNG" height="300">
   <img src="Screenshots/Screenshot_3.PNG" height="300">
   <img src="Screenshots/Screenshot_4.PNG" height="300">
-  <img src="Screenshots/Screenshot_2.PNG" height="300">
-  <img src="Screenshots/Screenshot_1.PNG" height="300">
 </div>
 
 <br>
@@ -63,10 +63,10 @@ Web-client and server:
 **Tech Stack**: Swift, UIKit, SceneKit.
 
 <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+  <img src="Screenshots/Screenshot_1.PNG" height="300">
+  <img src="Screenshots/Screenshot_2.PNG" height="300">
   <img src="Screenshots/Screenshot_3.PNG" height="300">
   <img src="Screenshots/Screenshot_4.PNG" height="300">
-  <img src="Screenshots/Screenshot_2.PNG" height="300">
-  <img src="Screenshots/Screenshot_1.PNG" height="300">
 </div>
 
 <br>
