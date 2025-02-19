@@ -183,10 +183,36 @@ class PrintViewController: UIViewController, UITextFieldDelegate {
                 case .success(let fileURL):
                     print("File selected at url: \(fileURL)")
                     self.selectedFileURL = fileURL
+                    self.loadModel(from: fileURL)
                 case .failure(let error):
                     self.showAlert(message: error.localizedDescription)
                 }
             }
+        }
+    }
+    
+    private func loadModel(from fileURL: URL) {
+        guard fileURL.startAccessingSecurityScopedResource() else {
+            self.showAlert(message: "Error accessing the file")
+            return
+        }
+        defer { fileURL.stopAccessingSecurityScopedResource() }
+        
+        let modelLoader = ModelLoader()
+        do {
+            self.sceneView.scene?.rootNode.childNodes.forEach { $0.removeFromParentNode() }
+            let scene = try modelLoader.loadModel(from: fileURL)
+            for node in scene.rootNode.childNodes {
+                self.sceneView.scene?.rootNode.addChildNode(node)
+            }
+        } catch {
+            self.showAlert(message: "Error loading model: \(error.localizedDescription)")
+        }
+        
+        UIView.animate(withDuration: 0.25) {
+            self.previewPlaceholderLabel.alpha = 0
+        } completion: { _ in
+            self.previewPlaceholderLabel.isHidden = true
         }
     }
     
